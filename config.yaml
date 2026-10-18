@@ -1,0 +1,99 @@
+# Project paths
+paths:
+  root: "."
+  data_dir: "data"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  sample_dir: "data/sample"
+  models_dir: "models"
+  reports_dir: "reports"
+  figures_dir: "reports/figures"
+
+# Random seed for reproducibility
+seed: 42
+
+# Feature schema version (bump when feature list changes)
+feature_schema: "1.0"
+
+# Dataset columns
+dataset:
+  url_column: "url"
+  label_column: "label"
+  legitimate_label: 0
+  phishing_label: 1
+
+# Split configuration
+split:
+  train_size: 0.70
+  val_size: 0.15
+  test_size: 0.15
+  stratify: true
+  group_by_domain: true
+
+# Model configuration
+models:
+  logistic_regression:
+    solver: "liblinear"
+    class_weight: "balanced"
+    max_iter: 1000
+    random_seed: 42
+  random_forest:
+    n_estimators: 300
+    class_weight: "balanced_subsample"
+    max_depth: null
+    min_samples_split: 2
+    min_samples_leaf: 1
+    random_seed: 42
+
+# Hyperparameter search
+search:
+  cv_folds: 5
+  scoring: "f1"
+  n_iter: 20
+
+# Threshold selection (chosen on validation set)
+threshold:
+  default: 0.5
+  metric: "f1"
+
+# Misleading brand tokens for subdomain heuristic
+misleading_brands:
+  - paypal
+  - microsoft
+  - apple
+  - amazon
+  - google
+  - facebook
+  - netflix
+  - bankofamerica
+  - chase
+  - wells
+
+# Suspicious TLDs commonly abused in phishing
+suspicious_tlds:
+  - xyz
+  - top
+  - loan
+  - bid
+  - win
+  - club
+  - online
+  - site
+  - review
+  - country
+
+# Common TLDs
+common_tlds:
+  - com
+  - org
+  - net
+  - edu
+  - gov
+  - mil
+  - int
+
+# Security
+security:
+  max_url_length: 4096
+  redact_query_params: true
+  trusted_model_dir: "models"

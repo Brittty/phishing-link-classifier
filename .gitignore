@@ -1,0 +1,56 @@
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+.DS_Store
+Thumbs.db
+
+# Data directories (runtime-generated, not tracked except sample/)
+data/raw/
+data/processed/
+*.csv
+
+# Model artifacts (runtime-generated)
+models/*.joblib
+models/*.pkl
+models/*.pickle
+
+# Reports and evaluation outputs
+reports/
+reports/figures/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+
+# Python environment and cache
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secrets
+.env
+.env.*
+
+# Generated model artifacts
+models/*.joblib
+
+# Local datasets and reports
+data/raw/
+data/processed/
+reports/
