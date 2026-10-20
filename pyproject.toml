@@ -19,6 +19,8 @@ dependencies = [
     "pyyaml>=6.0",
     "tldextract>=5.0.0",
     "idna>=3.7",
+    "flask>=3.0.0",
+    "werkzeug>=3.0.0",
 ]
 
 [project.optional-dependencies]

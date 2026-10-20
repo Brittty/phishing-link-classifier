@@ -54,3 +54,4 @@ models/*.joblib
 data/raw/
 data/processed/
 reports/
+*.egg-info/

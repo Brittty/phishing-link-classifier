@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Link Classifier - Security Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1a202c;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { font-size: 1.875rem; margin-bottom: 0.5rem; }
+        header p { opacity: 0.9; font-size: 1rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #1e3a8a;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        textarea { min-height: 150px; resize: vertical; font-family: monospace; }
+        button {
+            background: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #2c5282; }
+        button:disabled { background: #a0aec0; cursor: not-allowed; }
+        .file-upload {
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .file-upload:hover { border-color: #3b82f6; }
+        .file-upload input { display: none; }
+        .result { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; display: none; }
+        .result.show { display: block; }
+        .result.safe { background: #f0fff4; border: 1px solid #68d391; color: #22543d; }
+        .result.warning { background: #fffaf0; border: 1px solid #f6e05e; color: #744210; }
+        .result.danger { background: #fed7d7; border: 1px solid #fc8181; color: #742a2a; }
+        .score-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+        .score-low { background: #68d391; color: #22543d; }
+        .score-medium { background: #f6e05e; color: #744210; }
+        .score-high { background: #fc8181; color: #742a2a; }
+        .indicator {
+            background: #f7fafc;
+            border-left: 4px solid #cbd5e0;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0 6px 6px 0;
+        }
+        .indicator.high { border-left-color: #fc8181; }
+        .indicator.medium { border-left-color: #f6e05e; }
+        .indicator.low { border-left-color: #68d391; }
+        .indicator .category { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #718096; }
+        .indicator .indicator-text { font-weight: 600; margin-bottom: 0.25rem; }
+        .indicator .reason { font-size: 0.875rem; color: #4a5568; }
+        .url-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .url-item .url { font-family: monospace; word-break: break-all; color: #2b6cb0; }
+        .url-item .meta { font-size: 0.875rem; color: #718096; margin-top: 0.25rem; }
+        .actions { background: #ebf4ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 1rem; margin-top: 1rem; }
+        .actions h3 { margin-bottom: 0.5rem; color: #2b6cb0; }
+        .actions ul { list-style: disc inside; color: #2c5282; }
+        .actions li { margin-bottom: 0.25rem; }
+        .model-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .model-ok { background: #c6f6d5; color: #22543d; }
+        .model-missing { background: #fed7d7; color: #742a2a; }
+        .safe-actions { margin-top: 1rem; }
+        .hidden { display: none; }
+        .loading { display: none; text-align: center; padding: 1rem; color: #4a5568; }
+        .loading.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Phishing Link Classifier</h1>
+            <p>Offline URL & Email Phishing Detection - Local Security Dashboard</p>
+        </header>
+
+        <div class="model-status {% if model_available %}model-ok{% else %}model-missing{% endif %}">
+            {% if model_available %}
+            ✓ URL Model: {{ model_path }}
+            {% else %}
+            ⚠ URL Model not available: {{ model_error }}
+            {% endif %}
+        </div>
+
+        <div class="grid">
+            <div>
+                <div class="card">
+                    <h2>🔗 URL Phishing Checker</h2>
+                    <p>Enter a URL to check if it's phishing. No URLs are visited or downloaded.</p>
+                    <div class="form-group">
+                        <label for="url-input">URL to inspect</label>
+                        <input type="text" id="url-input" placeholder="https://example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="url-threshold">Classification threshold</label>
+                        <select id="url-threshold">
+                            <option value="0.3">0.3 (more sensitive)</option>
+                            <option value="0.5" selected>0.5 (balanced)</option>
+                            <option value="0.7">0.7 (more conservative)</option>
+                        </select>
+                    </div>
+                    <button id="btn-check-url">Inspect URL</button>
+                    <div id="url-loading" class="loading">Analyzing URL...</div>
+                    <div id="url-result" class="result"></div>
+                </div>
+            </div>
+            <div>
+                <div class="card">
+                    <h2>📧 Email Phishing Analyzer</h2>
+                    <p>Analyze an email for phishing indicators. Paste content or upload an .eml/.txt file.</p>
+                    <div class="file-upload" onclick="document.getElementById('email-file').click()">
+                        <p>📎 Upload .eml or .txt file (max 5 MB)</p>
+                        <input type="file" id="email-file" accept=".eml,.txt" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email-sender">Sender address</label>
+                        <input type="text" id="email-sender" placeholder="sender@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email-reply-to">Reply-To address (optional)</label>
+                        <input type="text" id="email-reply-to" placeholder="reply@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email-subject">Subject</label>
+                        <input type="text" id="email-subject" placeholder="Urgent: Verify your account" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email-body">Email body</label>
+                        <textarea id="email-body" placeholder="Paste email content here..."></textarea>
+                    </div>
+                    <button id="btn-analyze-email">Analyze Email</button>
+                    <div id="email-loading" class="loading">Analyzing email...</div>
+                    <div id="email-result" class="result"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card safe-actions">
+            <h3>⚠️ Security & Privacy</h3>
+            <ul>
+                <li>All analysis runs locally - no data is sent to external servers</li>
+                <li>URLs are never visited, downloaded, or resolved</li>
+                <li>Email attachments are never opened or extracted</li>
+                <li>Uploaded files are processed in memory and not stored</li>
+                <li>The URL model is trained on only 24 samples - treat results as indicative, not definitive</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const btnCheckUrl = document.getElementById('btn-check-url');
+        const urlInput = document.getElementById('url-input');
+        const urlThreshold = document.getElementById('url-threshold');
+        const urlLoading = document.getElementById('url-loading');
+        const urlResult = document.getElementById('url-result');
+
+        btnCheckUrl.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) { alert('Please enter a URL'); return; }
+            urlLoading.classList.add('show');
+            urlResult.classList.remove('show');
+            urlResult.innerHTML = '';
+
+            try {
+                const resp = await fetch('/api/predict-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, threshold: parseFloat(urlThreshold.value) })
+                });
+                const data = await resp.json();
+                urlLoading.classList.remove('show');
+
+                if (resp.ok) {
+                    renderUrlResult(data);
+                } else {
+                    urlResult.innerHTML = `<div class="result danger show"><strong>Error:</strong> ${escapeHtml(data.error || 'Unknown error')}</div>`;
+                    urlResult.classList.add('show');
+                }
+            } catch (e) {
+                urlLoading.classList.remove('show');
+                urlResult.innerHTML = `<div class="result danger show"><strong>Error:</strong> ${escapeHtml(e.message)}</div>`;
+                urlResult.classList.add('show');
+            }
+        });
+
+        function renderUrlResult(data) {
+            const isPhishing = data.prediction === 'phishing';
+            const cls = isPhishing ? 'danger' : 'safe';
+            urlResult.innerHTML = `
+                <div class="result ${cls} show">
+                    <strong>Result:</strong> ${escapeHtml(data.prediction || 'unknown')} (probability: ${(data.probability * 100).toFixed(1)}%)<br>
+                    <strong>Threshold:</strong> ${data.threshold}<br>
+                    <strong>URL:</strong> ${escapeHtml(data.url || 'N/A')}<br>
+                    <strong>Valid:</strong> ${data.is_valid ? 'Yes' : 'No'}${data.error ? ' - ' + escapeHtml(data.error) : ''}
+                </div>
+            `;
+            urlResult.classList.add('show');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        const btnAnalyzeEmail = document.getElementById('btn-analyze-email');
+        const emailLoading = document.getElementById('email-loading');
+        const emailResult = document.getElementById('email-result');
+
+        btnAnalyzeEmail.addEventListener('click', async () => {
+            const sender = document.getElementById('email-sender').value.trim();
+            const replyTo = document.getElementById('email-reply-to').value.trim();
+            const subject = document.getElementById('email-subject').value.trim();
+            const body = document.getElementById('email-body').value.trim();
+            const fileInput = document.getElementById('email-file');
+
+            const formData = new FormData();
+            if (fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            }
+            formData.append('sender', sender);
+            formData.append('reply_to', replyTo);
+            formData.append('subject', subject);
+            formData.append('body_text', body);
+            formData.append('threshold', '0.5');
+
+            emailLoading.classList.add('show');
+            emailResult.classList.remove('show');
+            emailResult.innerHTML = '';
+
+            try {
+                const resp = await fetch('/api/analyze-email', { method: 'POST', body: formData });
+                const data = await resp.json();
+                emailLoading.classList.remove('show');
+
+                if (resp.ok) {
+                    renderEmailResult(data);
+                } else {
+                    emailResult.innerHTML = `<div class="result danger show"><strong>Error:</strong> ${escapeHtml(data.error || 'Unknown error')}</div>`;
+                    emailResult.classList.add('show');
+                }
+            } catch (e) {
+                emailLoading.classList.remove('show');
+                emailResult.innerHTML = `<div class="result danger show"><strong>Error:</strong> ${escapeHtml(e.message)}</div>`;
+                emailResult.classList.add('show');
+            }
+        });
+
+    function renderEmailResult(data) {
+        const category = data.risk_category || 'low';
+        const score = data.risk_score || 0;
+        const scoreClass = `score-${category}`;
+        const resultClass = category === 'high' ? 'danger' : category === 'medium' ? 'warning' : 'safe';
+
+        let html = `
+            <div class="result ${resultClass} show">
+                <div style="margin-bottom: 1rem;">
+                    <strong>Risk Score:</strong>
+                    <span class="score-badge ${scoreClass}">${score}/100</span>
+                    <span style="margin-left: 1rem; font-weight: 600;">Category: ${category.toUpperCase()}</span>
+                </div>
+        `;
+
+        if (data.safe_actions && data.safe_actions.length > 0) {
+            html += `<div class="actions"><h3>Recommended Actions</h3><ul>`;
+            data.safe_actions.forEach(a => html += `<li>${escapeHtml(a)}</li>`);
+            html += `</ul></div>`;
+        }
+
+        if (data.indicators && data.indicators.length > 0) {
+            html += `<h3>Detected Indicators (${data.total_indicators})</h3>`;
+            data.indicators.forEach(ind => {
+                const sev = ind.severity || 'low';
+                html += `
+                    <div class="indicator ${sev}">
+                        <div class="category">${ind.category}</div>
+                        <div class="indicator-text">${escapeHtml(ind.indicator)}</div>
+                        <div class="reason">${escapeHtml(ind.reason)}</div>
+                        ${ind.url ? `<div style="font-size:0.8rem;color:#718096;margin-top:0.25rem;">URL: ${escapeHtml(ind.url)}</div>` : ''}
+                    </div>
+                `;
+            });
+        } else {
+            html += `<p>No phishing indicators detected.</p>`;
+        }
+
+        if (data.urls && data.urls.length > 0) {
+            html += `<h3>Extracted URLs (${data.urls.length})</h3>`;
+            data.urls.forEach(u => {
+                const ml = u.ml_available ? `<br><strong>ML:</strong> ${u.ml_prediction} (${(u.ml_probability*100).toFixed(1)}%)` : '';
+                html += `
+                    <div class="url-item">
+                        <div class="url">${escapeHtml(u.url)}</div>
+                        ${u.visible_text ? `<div class="meta">Visible text: ${escapeHtml(u.visible_text)}</div>` : ''}
+                        ${(u.rule_indicators && u.rule_indicators.length) ? `<div class="meta">Rules: ${escapeHtml(u.rule_indicators.join(', '))}</div>` : ''}
+                        ${ml}
+                    </div>
+                `;
+            });
+        }
+
+        if (data.sender || data.reply_to || data.subject) {
+            html += `<div style="margin-top:1rem; font-size:0.875rem; color:#4a5568;">`;
+            if (data.sender) html += `<strong>Sender:</strong> ${escapeHtml(data.sender)}<br>`;
+            if (data.reply_to) html += `<strong>Reply-To:</strong> ${escapeHtml(data.reply_to)}<br>`;
+            if (data.subject) html += `<strong>Subject:</strong> ${escapeHtml(data.subject)}<br>`;
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        emailResult.innerHTML = html;
+        emailResult.classList.add('show');
+    }
+
+    document.getElementById('email-file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.eml') && !file.name.toLowerCase().endsWith('.txt')) {
+            alert('Only .eml and .txt files are allowed');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const resp = await fetch('/api/analyze-email', { method: 'POST', body: formData });
+            const data = await resp.json();
+            emailLoading.classList.remove('show');
+
+            if (resp.ok) {
+                document.getElementById('email-sender').value = data.sender || '';
+                document.getElementById('email-reply-to').value = data.reply_to || '';
+                document.getElementById('email-subject').value = data.subject || '';
+                if (data.body_text_preview) {
+                    document.getElementById('email-body').value = data.body_text_preview;
+                }
+                renderEmailResult(data);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Error reading file: ' + err.message);
+        }
+    });
+</script>
+</body>
+</html>

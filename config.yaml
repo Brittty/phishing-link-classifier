@@ -97,3 +97,25 @@ security:
   max_url_length: 4096
   redact_query_params: true
   trusted_model_dir: "models"
+
+# Email analysis configuration
+email:
+  max_email_size_mb: 5
+  max_attachments: 10
+  risk_threshold_low: 30
+  risk_threshold_medium: 60
+  scoring_rules:
+    urgent_language: 15
+    credential_request: 25
+    financial_request: 25
+    reward_claim: 15
+    sender_mismatch: 20
+    sender_impersonation: 25
+    suspicious_sender: 10
+    url_long: 5
+    url_ip_host: 10
+    url_shortener: 8
+    url_visible_mismatch: 10
+    url_ml_phishing: 15
+    risky_attachment: 15
+    too_many_attachments: 5

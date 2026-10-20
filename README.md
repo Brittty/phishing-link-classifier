@@ -13,7 +13,10 @@ phishing-link-classifier/
 ├── requirements.txt    # Runtime dependencies
 ├── requirements-dev.txt # Dev/test dependencies
 ├── setup.py            # Packaging
-├── config.yaml         # Global config (paths, seeds, hyperparameters)
+├── config.yaml         # Global config (paths, seeds, hyperparameters, email scoring)
+├── app.py              # Flask web application (local dashboard)
+├── Dockerfile          # Container definition
+├── .dockerignore       # Docker ignore rules
 ├── .gitignore          # Git ignore rules
 ├── data/
 │   ├── raw/            # User-provided dataset downloads (git-ignored)
@@ -30,6 +33,7 @@ phishing-link-classifier/
 │   ├── predict.py      # Inference helpers (single + batch)
 │   ├── cli.py          # Command-line entry point
 │   └── security.py     # Input validation, URL redaction, artifact trust
+│   └── email_analyzer.py  # Email phishing detection (explainable rules)
 ├── scripts/
 │   └── train.py        # Thin orchestration wrapper
 ├── tests/              # Unit tests
@@ -88,11 +92,53 @@ python -m src.cli predict --input-file data/sample/urls.csv --model models/phish
 python -m src.cli evaluate --data data/processed/test.csv --model models/phishing_pipeline.joblib
 ```
 
+### Run the web dashboard
+
+```bash
+python app.py
+```
+
+Open your browser at `http://127.0.0.1:5000`. The dashboard has two sections:
+
+**URL Phishing Checker** - Enter a URL to get a phishing/legitimate classification with probability from the trained model.
+
+**Email Phishing Analyzer** - Paste email content (sender, subject, body) or upload a `.eml`/`.txt` file to get an explainable risk score (0-100), risk category (Low/Medium/High), detected indicators, and recommended actions.
+
+### Analyze email from Python
+
+```python
+from src.email_analyzer import analyze_email
+
+result = analyze_email(
+    sender="security@paypal-verification.xyz",
+    reply_to="security@evil.com",
+    subject="Urgent: Verify your password",
+    body_text="Your account is suspended. Please enter your password immediately.",
+    body_html="",
+)
+print(f"Risk: {result['risk_score']}/100 ({result['risk_category']})")
+for ind in result["indicators"]:
+    print(f"- {ind['indicator']}: {ind['reason']}")
+```
+
 ## Security
 
-- Features are computed from the URL string only. **No URLs are visited, downloaded, or executed.**
+- **URL analysis**: Features are computed from the URL string only. **No URLs are visited, downloaded, or executed.**
+- **Email analysis**: No URLs in emails are visited. No attachments are opened or extracted.
 - Query parameters are parsed for features but are not logged in plain text.
 - Only load model artifacts from the local, trusted `models/` directory.
+- Uploaded email files are validated for type (.eml, .txt only) and size (max 5 MB).
+- Email content is HTML-escaped before display in the web interface.
+- Uploaded files are processed in memory and not stored on disk.
+
+## Model & Dataset Limitations
+
+- The sample dataset contains only 24 labeled URLs (14 legitimate, 10 phishing).
+- The URL model is trained on URLs only, not on email messages.
+- Email phishing detection uses explainable rules, not a trained ML model.
+- Do not claim the model has learned email phishing patterns.
+- Results should be treated as indicative, not definitive.
+- A properly trained email-specific ML model could be added later with a labeled email dataset.
 
 ## Testing
 
